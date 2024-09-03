@@ -5,7 +5,6 @@ go 1.21.3
 require github.com/BrobridgeOrg/gravity-sdk/v2 v2.0.8
 
 require (
-	github.com/BrobridgeOrg/gravity-sdk v1.0.12
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/nats-io/nats.go v1.33.1 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
