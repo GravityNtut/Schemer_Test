@@ -10,41 +10,58 @@ import (
 	adapter_sdk "github.com/BrobridgeOrg/gravity-sdk/v2/adapter"
 	"github.com/BrobridgeOrg/gravity-sdk/v2/core"
 	product_sdk "github.com/BrobridgeOrg/gravity-sdk/v2/product"
+	subscriber_sdk "github.com/BrobridgeOrg/gravity-sdk/v2/subscriber"
+	gravity_sdk_types_product_event "github.com/BrobridgeOrg/gravity-sdk/v2/types/product_event"
 	"github.com/google/uuid"
+	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
-func TestNewDeck(t *testing.T) {
-	if err := InitApp(); err != nil {
+func TestCreateProduct(t *testing.T) {
+	if err := InitProduct(); err != nil {
 		t.Errorf("CreateProduct() failed: %v", err)
 	}
 }
 
-func InitApp() error {
+func TestPublish(t *testing.T) {
+	// Create adapter connector
+	client := CreateClient()
+	acOpts := adapter_sdk.NewOptions()
+	acOpts.Domain = "default"
+	adapterClient := adapter_sdk.NewAdapterConnectorWithClient(client, acOpts)
+	if err := Publish(adapterClient); err != nil {
+		t.Errorf("Publish() failed: %v", err)
+	}
+}
+
+func TestSubscribe(t *testing.T) {
 	client := core.NewClient()
 	options := core.NewOptions()
-	err := client.Connect("0.0.0.0:32803", options)
+	client.Connect("0.0.0.0:32803", options)
+	Subscribe(client)
+}
+
+func CreateClient() *core.Client {
+	client := core.NewClient()
+	options := core.NewOptions()
+	if err := client.Connect("0.0.0.0:32803", options); err != nil {
+		panic(err)
+	}
+	return client
+}
+
+func InitProduct() error {
+	client := CreateClient()
 	pcOpts := product_sdk.NewOptions()
 	pcOpts.Domain = "default"
 	productClient := product_sdk.NewProductClient(client, pcOpts)
 
-	// Create adapter connector
-	acOpts := adapter_sdk.NewOptions()
-	acOpts.Domain = "default"
-	adapterClient := adapter_sdk.NewAdapterConnectorWithClient(client, acOpts)
-
-	if err != nil {
-		panic(err)
-	}
-	if err = CreateProduct(productClient); err != nil {
+	if err := CreateProduct(productClient); err != nil {
 		return err
 	}
-	if err = CreateRuleset(productClient); err != nil {
+	if err := CreateRuleset(productClient); err != nil {
 		return err
 	}
-	if err = Publish(adapterClient); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -152,4 +169,55 @@ func CreateProduct(pc *product_sdk.ProductClient) error {
 
 	fmt.Println(ps.Name)
 	return nil
+}
+
+func Subscribe(client *core.Client) {
+	// Create adapter connector
+	acOpts := subscriber_sdk.NewOptions()
+	acOpts.Domain = "default"
+	acOpts.Verbose = true
+	s := subscriber_sdk.NewSubscriberWithClient("", client, acOpts)
+	// Subscribe to specific data product
+	sub, err := s.Subscribe("sdk_example", func(msg *nats.Msg) {
+		var pe gravity_sdk_types_product_event.ProductEvent
+		err := proto.Unmarshal(msg.Data, &pe)
+		if err != nil {
+			fmt.Printf("Failed to parsing product event: %v", err)
+			msg.Ack()
+			return
+		}
+
+		md, _ := msg.Metadata()
+
+		r, err := pe.GetContent()
+		if err != nil {
+			fmt.Printf("Failed to parsing content: %v", err)
+			msg.Ack()
+			return
+		}
+
+		// Convert data to JSON
+		event := map[string]interface{}{
+			"header":     msg.Header,
+			"subject":    msg.Subject,
+			"seq":        md.Sequence.Consumer,
+			"timestamp":  md.Timestamp,
+			"product":    "sdk_example",
+			"event":      pe.EventName,
+			"method":     pe.Method.String(),
+			"table":      pe.Table,
+			"primaryKey": pe.PrimaryKeys,
+			"payload":    r.AsMap(),
+		}
+
+		data, _ := json.MarshalIndent(event, "", "  ")
+		fmt.Println(string(data))
+		msg.Ack()
+
+	}, subscriber_sdk.Partition(-1), subscriber_sdk.StartSequence(1))
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(5 * time.Second)
+	sub.Close()
 }
