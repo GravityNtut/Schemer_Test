@@ -1,4 +1,4 @@
-Feature: Data Product subscribe 
+Feature: Schemer test 
 
 Scenario:
 Given NATS has been opened
