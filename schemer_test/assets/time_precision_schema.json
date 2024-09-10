@@ -1,0 +1,24 @@
+{ 
+  "id": {
+        "type": "uint"
+  },
+  "time_default": {
+	"type": "time"
+  },
+  "time_second": {
+	"type": "time",
+	"precision": "seconed"
+  },
+  "time_millisecond": {
+	"type": "time",
+	"precision": "millisecond"
+  },
+  "time_microsecond": {
+	"type": "time",
+	"precision": "microsecond"
+  },
+  "time_nanosecond": {
+	"type": "time",
+	"precision": "nanosecond"
+  }
+}
