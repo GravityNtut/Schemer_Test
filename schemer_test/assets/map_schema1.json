@@ -1,0 +1,8 @@
+{
+    "id": { 
+        "type": "uint" 
+    },
+    "map_col": {
+        "type": "map"
+    }
+}

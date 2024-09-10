@@ -1,0 +1,14 @@
+{
+    "id": { 
+        "type": "uint" 
+    },
+    "map_col": {
+        "type": "map",
+        "fields": {
+            "nested_time": {
+                "type": "time",
+                "precision":   "milisecond"
+            }      
+        }
+    }
+}

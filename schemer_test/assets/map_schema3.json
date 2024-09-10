@@ -1,0 +1,31 @@
+{
+    "id": { 
+        "type": "uint" 
+    },
+    "map_col": {
+        "type": "map",
+        "fields": {
+            "string_col": {
+                "type": "string"
+            },
+            "binary_col": {
+                "type": "binary"
+            },
+            "int_col": {
+                "type": "int"
+            },
+            "uint_col": {
+                "type": "uint"
+            },
+            "float_col": {
+                "type": "float"
+            },
+            "bool_col": {
+                "type": "bool"
+            },
+            "any_col": {
+                "type": "any"
+            }
+        }
+    }
+}
