@@ -1,0 +1,68 @@
+{ 
+  "id": {
+    "type": "uint"
+  },
+  "array_null": {
+    "type": "array",
+    "subtype": ""
+  },
+  "array_space": {
+    "type": "array",
+    "subtype": " "
+  },
+  "array_abc": {
+    "type": "array",
+    "subtype": "abc"
+  },
+  "array_chinese": {
+    "type": "array",
+    "subtype": "中文"
+  },
+  "array_special": {
+    "type": "array",
+    "subtype": "!@#$%^&*()_+{}|:<>?~`-=[]\\;',./'"
+  },
+  "array_maxLen": {
+    "type": "array",
+    "subtype": "max_len_str(32768)"
+  },
+  "array_number": {
+    "type": "array",
+    "subtype": 5
+  },
+  "array_string": {
+    "type": "array",
+    "subtype": "string"
+  },
+  "array_int": {
+    "type": "array",
+    "subtype": "int"
+  },
+  "array_uint": {
+    "type": "array",
+    "subtype": "uint"
+  },
+  "array_binary": {
+    "type": "array",
+    "subtype": "binary"
+  },
+  "array_float": {
+    "type": "array",
+    "subtype": "float"
+  },
+  "array_bool": {
+    "type": "array",
+    "subtype": "bool"
+  },
+  "array_time": {
+    "type": "array",
+    "subtype": "time"
+  },
+  "array_any": {
+    "type": "array",
+    "subtype": "any"
+  },
+  "array_ignore": {
+    "type": "array"
+  }
+}
