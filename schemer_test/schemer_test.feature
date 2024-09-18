@@ -3,7 +3,10 @@ Feature: Schemer test
 Background: 
     Given NATS has been opened
     Given Dispatcher has been opened
-    Given Create data product and ruleset
+    Given Schema "'normal_type_array_schema'" from "'./assets/array_schema1.json'"
+    Given Schema "'special_type_array_schema'" from "'./assets/array_schema2.jso'n"
+    Given Create data product "'drink_normal_type'" with ruleset "'drink_normal_type_rs'" and the schema "'normal_type_array_schema'"
+    Given Create data product "'drink_special_type'" with ruleset "'drink_special_type_rs'" and the schema "'special_type_array_schema'"
 
 
 

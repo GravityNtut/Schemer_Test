@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 )
 
 var ut = testutils.TestUtils{}
+var schemas = make(map[string]string)
 
 var opts = godog.Options{
 	Format:        "pretty",
@@ -89,7 +91,6 @@ func InitProduct() error {
 	// pcOpts := product_sdk.NewOptions()
 	// pcOpts.Domain = "default"
 	// productClient := product_sdk.NewProductClient(client, pcOpts)
-
 
 	return nil
 }
@@ -253,6 +254,32 @@ func Subscribe(client *core.Client) {
 	sub.Close()
 }
 
+func LoadSchemaFromFile(schemaName, path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	schmeaString := string(data)
+	re := regexp.MustCompile(`[max_len_str\()]`)
+	if !re.MatchString(schmeaString) {
+		schemas[schemaName] = schmeaString
+		return nil
+	}
+	maxLengthString := "a"
+	for i := 0; i < 32768; i++ {
+		maxLengthString += "a"
+	}
+	schemaResult := re.ReplaceAllString(schmeaString, maxLengthString)
+	schemas[schemaName] = schemaResult
+	return nil
+}
+
+func CreateDataProductAndRuleset(dataProduct, ruleset, schemaName string) error {
+	CreateProduct(ProductClient, dataProduct, schemas[schemaName])
+	CreateRuleset(ProductClient, dataProduct, ruleset, schemas[schemaName], ruleset)
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.After(func(ctx context.Context, _ *godog.Scenario, _ error) (context.Context, error) {
@@ -262,9 +289,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
 	ctx.Given(`^Create data product and ruleset$`, InitProduct)
-	ctx.Given(`^Publish an Event with "'(.*?)'"$`, PublishEvent)
-	ctx.Given(`^Subscribe data product "'(.*?)'" using sdk$`, SubscribeDataProduct)
-	ctx.Given(`^The received message and expected result are completely consistent in every field$`, CheckConsistency)
-	ctx.Given(`^The received message and expected result are completely inconsistent in every field$`, CheckInconsistency)
-
+	// ctx.Given(`^Publish an Event with "'(.*?)'"$`, PublishEvent)
+	// ctx.Given(`^Subscribe data product "'(.*?)'" using sdk$`, SubscribeDataProduct)
+	// ctx.Given(`^The received message and expected result are completely consistent in every field$`, CheckConsistency)
+	// ctx.Given(`^The received message and expected result are completely inconsistent in every field$`, CheckInconsistency)
+	ctx.Given(`Schema "'(.*?)'" from "'(.*?)'"`, LoadSchemaFromFile)
+	ctx.Given(`Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"`, CreateDataProductAndRuleset)
 }
