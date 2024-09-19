@@ -4,7 +4,7 @@ Scenario:
 Given NATS has been opened
 Given Dispatcher has been opened
 #Scenario
-	Scenario Outline:  Successful scenario. Use the `product sub` command to receive all data published to the specified data product.
+	Scenario Outline: Successful scenario. Use the `product sub` command to receive all data published to the specified data product.
 	Given Create data product "'drink'"
     Given Create data product "'drink'" with ruleset "'drinkCreated'"
     Given Publish an Event with payload '{"string":"'string'","binary":"'binary'","int":"'int'","uint":"'uint'","float":"'float'","bool":"'bool'","time":"'time'","time.precision":"'time.precision'","array":"'array'","array.subtype":"'array.subtype'","map":"'map'","any":"'any'"}' into sdk	
