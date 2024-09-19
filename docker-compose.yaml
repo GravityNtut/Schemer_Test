@@ -1,5 +1,3 @@
-version: '1'
-
 services:
   nats-jetstream:
     image: "nats:2.10.11-alpine3.19"

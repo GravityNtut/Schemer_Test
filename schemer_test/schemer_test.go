@@ -1,14 +1,13 @@
 package schemertest
 
 import (
-	"Schemer_Test/testutils"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"testing"
 	"time"
@@ -19,19 +18,22 @@ import (
 	subscriber_sdk "github.com/BrobridgeOrg/gravity-sdk/v2/subscriber"
 	gravity_sdk_types_product_event "github.com/BrobridgeOrg/gravity-sdk/v2/types/product_event"
 	"github.com/cucumber/godog"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/pflag"
 	"google.golang.org/protobuf/proto"
 )
 
-var ut = testutils.TestUtils{}
 var schemas = make(map[string]string)
+var jetstreamURL = "127.0.0.1:32803"
+var receivePayload = make(map[string]interface{})
 
 var opts = godog.Options{
 	Format:        "pretty",
 	Paths:         []string{"./"},
-	StopOnFailure: ut.Config.StopOnFailure,
+	StopOnFailure: false,
 }
 
 func init() {
@@ -40,10 +42,6 @@ func init() {
 
 func TestMain(_ *testing.M) {
 	pflag.Parse()
-	err := ut.LoadConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options:             &opts,
@@ -53,29 +51,27 @@ func TestMain(_ *testing.M) {
 	}
 }
 
-// func TestCreateProduct(t *testing.T) {
-// 	if err := InitProduct(); err != nil {
-// 		t.Errorf("CreateProduct() failed: %v", err)
-// 	}
-// }
+func PublishEvent(eventName, payload string) error {
+	// Create adapter connector
+	client := CreateClient()
+	acOpts := adapter_sdk.NewOptions()
+	acOpts.Domain = "default"
+	adapterClient := adapter_sdk.NewAdapterConnectorWithClient(client, acOpts)
+	if err := Publish(adapterClient, eventName, payload); err != nil {
+		return fmt.Errorf("Publish() failed: %v", err)
+	}
+	return nil
+}
 
-// func TestPublish(t *testing.T) {
-// 	// Create adapter connector
-// 	client := CreateClient()
-// 	acOpts := adapter_sdk.NewOptions()
-// 	acOpts.Domain = "default"
-// 	adapterClient := adapter_sdk.NewAdapterConnectorWithClient(client, acOpts)
-// 	if err := Publish(adapterClient); err != nil {
-// 		t.Errorf("Publish() failed: %v", err)
-// 	}
-// }
-
-// func TestSubscribe(t *testing.T) {
-// 	client := core.NewClient()
-// 	options := core.NewOptions()
-// 	client.Connect("0.0.0.0:32803", options)
-// 	Subscribe(client)
-// }
+func SubscribeDataProduct(dataProduct string) error {
+	client := core.NewClient()
+	options := core.NewOptions()
+	client.Connect("0.0.0.0:32803", options)
+	if err := Subscribe(client, dataProduct); err != nil {
+		return err
+	}
+	return nil
+}
 
 func CreateClient() *core.Client {
 	client := core.NewClient()
@@ -86,19 +82,11 @@ func CreateClient() *core.Client {
 	return client
 }
 
-func InitProduct() error {
-	// client := CreateClient()
-	// pcOpts := product_sdk.NewOptions()
-	// pcOpts.Domain = "default"
-	// productClient := product_sdk.NewProductClient(client, pcOpts)
-
-	return nil
-}
-
-func CreateProduct(pc *product_sdk.ProductClient, dataProduct, schemaPath string) error {
-	schema, err := readSchemaFile(schemaPath)
+func CreateProduct(pc *product_sdk.ProductClient, dataProduct string, schemaJSON string) error {
+	var schema map[string]interface{}
+	err := json.Unmarshal([]byte(schemaJSON), &schema)
 	if err != nil {
-		return err
+		return errors.New("invalid schema format")
 	}
 	// Create a new data product
 	ps, err := pc.CreateProduct(&product_sdk.ProductSetting{
@@ -116,7 +104,7 @@ func CreateProduct(pc *product_sdk.ProductClient, dataProduct, schemaPath string
 	return nil
 }
 
-func CreateRuleset(pc *product_sdk.ProductClient, dataProduct, ruleset, schemaPath, event string) error {
+func CreateRuleset(pc *product_sdk.ProductClient, dataProduct, ruleset, schemaJSON, event string) error {
 	product, err := pc.GetProduct(dataProduct)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Not found product sdk_example"))
@@ -133,9 +121,10 @@ func CreateRuleset(pc *product_sdk.ProductClient, dataProduct, ruleset, schemaPa
 		}
 	}
 
-	schema, err := readSchemaFile(schemaPath)
+	var schema map[string]interface{}
+	err = json.Unmarshal([]byte(schemaJSON), &schema)
 	if err != nil {
-		return err
+		return errors.New("invalid schema format")
 	}
 
 	// Preparing a new rule
@@ -154,10 +143,6 @@ func CreateRuleset(pc *product_sdk.ProductClient, dataProduct, ruleset, schemaPa
 	rule.Description = "Schema test"
 	rule.Enabled = true
 	rule.SchemaConfig = schema
-	// rule.HandlerConfig = &product_sdk.HandlerConfig{
-	// 	Type:   "script",
-	// 	Script: "return source",
-	// }
 
 	product.Setting.Rules[rule.Name] = rule
 
@@ -168,34 +153,8 @@ func CreateRuleset(pc *product_sdk.ProductClient, dataProduct, ruleset, schemaPa
 	return nil
 }
 
-func readSchemaFile(filename string) (map[string]interface{}, error) {
-
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, errors.New("No such schema file")
-	}
-
-	// Read file
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	var schema map[string]interface{}
-	err = json.Unmarshal(data, &schema)
-	if err != nil {
-
-		return nil, errors.New("invalid schema format")
-	}
-
-	return schema, nil
-}
-
-func Publish(ac *adapter_sdk.AdapterConnector) error {
-	meta := map[string]string{
-		"example": "example",
-	}
-	_, err := ac.Publish("ruleEvent", []byte(`{"id":1,"name":"test","price":100,"kcal":50}`), meta)
+func Publish(ac *adapter_sdk.AdapterConnector, eventName, payload string) error {
+	_, err := ac.Publish(eventName, []byte(payload), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -203,14 +162,15 @@ func Publish(ac *adapter_sdk.AdapterConnector) error {
 	return nil
 }
 
-func Subscribe(client *core.Client) {
+func Subscribe(client *core.Client, dataProduct string) error {
+	done := make(chan bool)
 	// Create adapter connector
 	acOpts := subscriber_sdk.NewOptions()
 	acOpts.Domain = "default"
 	acOpts.Verbose = true
 	s := subscriber_sdk.NewSubscriberWithClient("", client, acOpts)
 	// Subscribe to specific data product
-	sub, err := s.Subscribe("sdk_example", func(msg *nats.Msg) {
+	sub, err := s.Subscribe(dataProduct, func(msg *nats.Msg) {
 		var pe gravity_sdk_types_product_event.ProductEvent
 		err := proto.Unmarshal(msg.Data, &pe)
 		if err != nil {
@@ -218,8 +178,6 @@ func Subscribe(client *core.Client) {
 			msg.Ack()
 			return
 		}
-
-		md, _ := msg.Metadata()
 
 		r, err := pe.GetContent()
 		if err != nil {
@@ -229,29 +187,22 @@ func Subscribe(client *core.Client) {
 		}
 
 		// Convert data to JSON
-		event := map[string]interface{}{
-			"header":     msg.Header,
-			"subject":    msg.Subject,
-			"seq":        md.Sequence.Consumer,
-			"timestamp":  md.Timestamp,
-			"product":    "sdk_example",
-			"event":      pe.EventName,
-			"method":     pe.Method.String(),
-			"table":      pe.Table,
-			"primaryKey": pe.PrimaryKeys,
-			"payload":    r.AsMap(),
-		}
-
-		data, _ := json.MarshalIndent(event, "", "  ")
-		fmt.Println(string(data))
+		receivePayload = r.AsMap()
 		msg.Ack()
+		done <- true
 
 	}, subscriber_sdk.Partition(-1), subscriber_sdk.StartSequence(1))
 	if err != nil {
-		panic(err)
+		return err
 	}
-	time.Sleep(5 * time.Second)
-	sub.Close()
+	select {
+	case <-done:
+		sub.Close()
+	case <-time.After(5 * time.Second):
+		sub.Close()
+		return fmt.Errorf("%s subscribe timeout", dataProduct)
+	}
+	return nil
 }
 
 func LoadSchemaFromFile(schemaName, path string) error {
@@ -260,7 +211,7 @@ func LoadSchemaFromFile(schemaName, path string) error {
 		return err
 	}
 	schmeaString := string(data)
-	re := regexp.MustCompile(`[max_len_str\()]`)
+	re := regexp.MustCompile(`\[max_len_str\(\)\]`)
 	if !re.MatchString(schmeaString) {
 		schemas[schemaName] = schmeaString
 		return nil
@@ -274,25 +225,93 @@ func LoadSchemaFromFile(schemaName, path string) error {
 	return nil
 }
 
-func CreateDataProductAndRuleset(dataProduct, ruleset, schemaName string) error {
-	CreateProduct(ProductClient, dataProduct, schemas[schemaName])
-	CreateRuleset(ProductClient, dataProduct, ruleset, schemas[schemaName], ruleset)
+func CheckConsistency(payload string) error {
+	fmt.Println(receivePayload)
+	fmt.Println(payload)
 	return nil
+}
+
+func CreateDataProductAndRuleset(dataProduct, ruleset, schemaName string) error {
+	client := CreateClient()
+	pcOpts := product_sdk.NewOptions()
+	pcOpts.Domain = "default"
+	productClient := product_sdk.NewProductClient(client, pcOpts)
+	CreateProduct(productClient, dataProduct, schemas[schemaName])
+	CreateRuleset(productClient, dataProduct, ruleset, schemas[schemaName], ruleset)
+	return nil
+}
+
+func CheckNatsService() error {
+	nc, err := nats.Connect("nats://" + jetstreamURL)
+	if err != nil {
+		return err
+	}
+	defer nc.Close()
+	return nil
+}
+
+func CheckDispatcherService() error {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, container := range containers {
+		if container.Names[0] == "/gravity-dispatcher" {
+			return nil
+		}
+	}
+	return errors.New("dispatcher container 不存在")
+}
+
+func ClearDataProducts() {
+	nc, _ := nats.Connect("nats://" + jetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	streams := js.StreamNames(nats.MaxWait(200 * time.Second))
+
+	re := regexp.MustCompile(`^GVT_default_DP_(.*)`)
+	for stringName := range streams {
+		if stringName == "GVT_default" {
+			if err := js.PurgeStream(stringName); err != nil {
+				log.Fatalf(err.Error())
+			}
+		}
+		parts := re.FindStringSubmatch(stringName)
+		if parts == nil {
+			continue
+		}
+		productName := parts[1]
+		cmd := exec.Command("../gravity-cli", "product", "delete", productName, "-s", jetstreamURL)
+		if err := cmd.Run(); err != nil {
+			log.Fatalf(err.Error())
+		}
+	}
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.After(func(ctx context.Context, _ *godog.Scenario, _ error) (context.Context, error) {
-		ut.ClearDataProducts()
+		ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
-	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
-	ctx.Given(`^Create data product and ruleset$`, InitProduct)
-	// ctx.Given(`^Publish an Event with "'(.*?)'"$`, PublishEvent)
-	// ctx.Given(`^Subscribe data product "'(.*?)'" using sdk$`, SubscribeDataProduct)
-	// ctx.Given(`^The received message and expected result are completely consistent in every field$`, CheckConsistency)
+	ctx.Given(`^NATS has been opened$`, CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, CheckDispatcherService)
+	// ctx.Given(`^Create data product and ruleset$`, InitProduct)
+	ctx.Given(`^Publish an Event to "'(.*?)'" with "'(.*?)'"$`, PublishEvent)
+	ctx.When(`^Subscribe data product "'(.*?)'" using sdk$`, SubscribeDataProduct)
+	ctx.Then(`^The received message and "'(.*?)'" are completely consistent in every field$`, CheckConsistency)
 	// ctx.Given(`^The received message and expected result are completely inconsistent in every field$`, CheckInconsistency)
-	ctx.Given(`Schema "'(.*?)'" from "'(.*?)'"`, LoadSchemaFromFile)
-	ctx.Given(`Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"`, CreateDataProductAndRuleset)
+	ctx.Given(`Schema "'(.*?)'" from "'(.*?)'"$`, LoadSchemaFromFile)
+	ctx.Given(`Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"$`, CreateDataProductAndRuleset)
 }
