@@ -5,6 +5,34 @@
   "time_default": {
 	"type": "time"
   },
+  "time_": {
+	"type": "time",
+	"precision": ""
+  },
+  "time_ ": {
+	"type": "time",
+	"precision": " "
+  },
+  "time_abc": {
+	"type": "time",
+	"precision": "abc"
+  },
+  "time_中文": {
+	"type": "time",
+	"precision": "中文"
+  },
+  "time_garbled": {
+	"type": "time",
+	"precision": "!@#$%^&*()_+{}|:<>?~`-=[]\\\\;\\',./\\'"
+  },
+  "time_max_len_str(32768)": {
+	"type": "time",
+	"precision": "[max_len_str()]"
+  },
+  "time_5": {
+	"type": "time",
+	"precision": "5"
+  },
   "time_second": {
 	"type": "time",
 	"precision": "seconed"
