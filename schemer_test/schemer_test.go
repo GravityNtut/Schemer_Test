@@ -1,6 +1,7 @@
 package schemertest
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,6 +59,8 @@ func PublishEvent(eventName, payload string) error {
 	acOpts := adapter_sdk.NewOptions()
 	acOpts.Domain = "default"
 	adapterClient := adapter_sdk.NewAdapterConnectorWithClient(client, acOpts)
+
+	payload = processPayload(payload)
 	if err := Publish(adapterClient, eventName, payload); err != nil {
 		return fmt.Errorf("Publish() failed: %v", err)
 	}
@@ -89,7 +93,7 @@ func CreateProduct(pc *product_sdk.ProductClient, dataProduct string, schemaJSON
 		return errors.New("invalid schema format")
 	}
 	// Create a new data product
-	ps, err := pc.CreateProduct(&product_sdk.ProductSetting{
+	_, err = pc.CreateProduct(&product_sdk.ProductSetting{
 		Name:        dataProduct,
 		Description: "Schema test",
 		Schema:      schema,
@@ -99,8 +103,6 @@ func CreateProduct(pc *product_sdk.ProductClient, dataProduct string, schemaJSON
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(ps.Name)
 	return nil
 }
 
@@ -162,6 +164,37 @@ func Publish(ac *adapter_sdk.AdapterConnector, eventName, payload string) error 
 	return nil
 }
 
+func processPayload(payload string) string {
+	payload = ReplaceMassiveElementsStr(payload)
+	payload = ReplaceMaxLenStr(payload)
+	return payload
+}
+
+func ReplaceMassiveElementsStr(payload string) string {
+	reMissive := regexp.MustCompile(`\[massive_elements\]`)
+	if reMissive.MatchString(payload) {
+		seqString := "["
+		for i := 1; i <= 32768; i++ {
+			if i > 1 {
+				seqString += ", "
+			}
+			seqString += fmt.Sprintf("%d", i)
+		}
+		seqString += "]"
+		payload = reMissive.ReplaceAllString(payload, seqString)
+	}
+	return payload
+}
+
+func ReplaceMaxLenStr(payload string) string {
+	reMaxLenStr := regexp.MustCompile(`\[max_len_str\(\)\]`)
+	if reMaxLenStr.MatchString(payload) {
+		longString := strings.Repeat("a", 32768)
+		payload = reMaxLenStr.ReplaceAllString(payload, longString)
+	}
+	return payload
+}
+
 func Subscribe(client *core.Client, dataProduct string) error {
 	done := make(chan bool)
 	// Create adapter connector
@@ -211,24 +244,60 @@ func LoadSchemaFromFile(schemaName, path string) error {
 		return err
 	}
 	schmeaString := string(data)
-	re := regexp.MustCompile(`\[max_len_str\(\)\]`)
-	if !re.MatchString(schmeaString) {
-		schemas[schemaName] = schmeaString
-		return nil
-	}
-	maxLengthString := "a"
-	for i := 0; i < 32768; i++ {
-		maxLengthString += "a"
-	}
-	schemaResult := re.ReplaceAllString(schmeaString, maxLengthString)
-	schemas[schemaName] = schemaResult
+	ReplaceMaxLenStr(schmeaString)
+	schemas[schemaName] = schmeaString
 	return nil
 }
 
 func CheckConsistency(payload string) error {
-	fmt.Println(receivePayload)
-	fmt.Println(payload)
+	receivePayloadString, err := json.Marshal(receivePayload)
+	if err != nil {
+		return err
+	}
+	expectPayloadString := processPayload(payload)
+	expectPayloadString = FormatJSONData(expectPayloadString)
+
+	fmt.Println("receive:" + string(receivePayloadString))
+	fmt.Println("expect:" + expectPayloadString)
+
+	if string(receivePayloadString) != expectPayloadString {
+		return errors.New("expect consistent but inconsistent")
+	}
 	return nil
+}
+
+func CheckInconsistency(payload string) error {
+	receivePayloadString, err := json.Marshal(receivePayload)
+	if err != nil {
+		return err
+	}
+	expectPayloadString := FormatJSONData(payload)
+
+	// fmt.Println(string(receivePayloadString))
+	// fmt.Println(expectPayloadString)
+
+	if string(receivePayloadString) == expectPayloadString {
+		return errors.New("expect inconsistent but consistent")
+	}
+	return nil
+}
+
+func FormatJSONData(JSONData string) string {
+	var JSON interface{}
+	err := json.Unmarshal([]byte(JSONData), &JSON)
+	if err != nil {
+		log.Fatalf("%s Unmarshal Fail %s", JSONData, err.Error())
+	}
+
+	buf := new(bytes.Buffer)
+	encoder := json.NewEncoder(buf)
+	encoder.SetEscapeHTML(false)
+
+	err = encoder.Encode(JSON)
+	if err != nil {
+		return err.Error()
+	}
+	return strings.Trim(buf.String(), "\n")
 }
 
 func CreateDataProductAndRuleset(dataProduct, ruleset, schemaName string) error {
@@ -236,8 +305,13 @@ func CreateDataProductAndRuleset(dataProduct, ruleset, schemaName string) error 
 	pcOpts := product_sdk.NewOptions()
 	pcOpts.Domain = "default"
 	productClient := product_sdk.NewProductClient(client, pcOpts)
-	CreateProduct(productClient, dataProduct, schemas[schemaName])
-	CreateRuleset(productClient, dataProduct, ruleset, schemas[schemaName], ruleset)
+	if err := CreateProduct(productClient, dataProduct, schemas[schemaName]); err != nil {
+		return err
+	}
+	time.Sleep(10 * time.Millisecond)
+	if err := CreateRuleset(productClient, dataProduct, ruleset, schemas[schemaName], ruleset); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -307,11 +381,11 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^NATS has been opened$`, CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, CheckDispatcherService)
-	// ctx.Given(`^Create data product and ruleset$`, InitProduct)
+	ctx.Given(`Schema "'(.*?)'" from "'(.*?)'"$`, LoadSchemaFromFile)
+	ctx.Given(`Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"$`, CreateDataProductAndRuleset)
 	ctx.Given(`^Publish an Event to "'(.*?)'" with "'(.*?)'"$`, PublishEvent)
 	ctx.When(`^Subscribe data product "'(.*?)'" using sdk$`, SubscribeDataProduct)
 	ctx.Then(`^The received message and "'(.*?)'" are completely consistent in every field$`, CheckConsistency)
-	// ctx.Given(`^The received message and expected result are completely inconsistent in every field$`, CheckInconsistency)
-	ctx.Given(`Schema "'(.*?)'" from "'(.*?)'"$`, LoadSchemaFromFile)
-	ctx.Given(`Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"$`, CreateDataProductAndRuleset)
+	ctx.Then(`^The received message and "'(.*?)'" are completely inconsistent in every field$`, CheckInconsistency)
+	ctx.Given(`^Clear data products$`, ClearDataProducts)
 }

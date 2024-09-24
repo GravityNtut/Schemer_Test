@@ -1,0 +1,6 @@
+{ 
+  "array_number": {
+    "type": "array",
+    "subtype": 5
+  }
+}
