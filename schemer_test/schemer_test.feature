@@ -3,15 +3,17 @@ Feature: Schemer test
 Scenario:
 Given NATS has been opened
 Given Dispatcher has been opened
+Given Create data product drink with schema
+Given drink create ruleset drinkCreated with schema
+@E2
 #Scenario
+# TODO: Schema 初始化丟就好了
 	Scenario Outline:  Success scenario for time and time precision.							
-	Given Create data product "'drink'" with "'<schema>'" 
-    Given "'drink'" create ruleset "'drinkCreated'" with "'<schema>'"		
-    Given Publish an Event with payload "'<payload>'" into sdk	
+    Given Publish an Event with payload "'<payload>'" into sdk
     When Subscribe data product "'drink'" using the sdk	
     Then The received message and expected result are completely consistent in every field
     Examples:
-    |  ID  | schema | payload |
+    |  ID  | schema | payload | 
     | E2(1) | ./assets/time_precision_schema.json | '{"id":1,"time_second":"2024-08-06T15:02:00Z"}' |
     | E2(2) | ./assets/time_precision_schema.json | '{"id":2,"time_millisecond":"2024-08-06T15:02:00Z"}' |
     | E2(3) | ./assets/time_precision_schema.json | '{"id":3,"time_millisecond":"2024-08-06T15:02:00.123Z"}' |
@@ -22,9 +24,10 @@ Given Dispatcher has been opened
     | E2(8) | ./assets/time_precision_schema.json | '{"id":8,"time_nanosecond":"2024-08-06T15:02:00.123Z"}' |
     | E2(9) | ./assets/time_precision_schema.json | '{"id":9,"time_nanosecond":"2024-08-06T15:02:00.123456Z"}' |
     | E2(10) | ./assets/time_precision_schema.json | '{"id":10,"time_nanosecond":"2024-08-06T15:02:00.123456789Z"}' |
-    | E2(11) | ./assets/time_precision_schema.json | '{"id":10,"time_default":"2024-08-06T15:02:00Z"}' |
-    | E2(12) | ./assets/time_precision_schema.json | '{"id":10,"time_default":"2024-08-06T15:02:00.123Z"}' |
+    | E2(11) | ./assets/time_precision_schema.json | '{"id":11,"time_default":"2024-08-06T15:02:00Z"}' |
+    | E2(12) | ./assets/time_precision_schema.json | '{"id":12,"time_default":"2024-08-06T15:02:00.123Z"}' |
 
+@E3
 #Scenario
 	Scenario Outline: Failure scenario for time and time precision.
 	Given Create data product "'drink'" with "'<schema>'" 
@@ -82,18 +85,18 @@ Given Dispatcher has been opened
     | E3(46) | ./assets/time_precision_schema.json | '{"id":46,"time_中文":"2024-08-06T15:02:00.123456Z"}' |
     | E3(47) | ./assets/time_precision_schema.json | '{"id":47,"time_中文":"2024-08-06T15:02:00.123456789Z"}' |
     | E3(48) | ./assets/time_precision_schema.json | '{"id":48,"time_中文":"2024-08-06T15:02:00.1234567890Z"}' |
-    | E3(49) | ./assets/time_precision_schema.json | '{"id":49,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":""}' |
-    | E3(50) | ./assets/time_precision_schema.json | '{"id":50,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":" "}' |
-    | E3(51) | ./assets/time_precision_schema.json | '{"id":51,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"abc"}' |
-    | E3(52) | ./assets/time_precision_schema.json | '{"id":52,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"中文"}' |
-    | E3(53) | ./assets/time_precision_schema.json | '{"id":53,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'"}' |
-    | E3(54) | ./assets/time_precision_schema.json | '{"id":54,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"max_len_str(32768)"}' |
-    | E3(55) | ./assets/time_precision_schema.json | '{"id":55,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"5"}' |
-    | E3(56) | ./assets/time_precision_schema.json | '{"id":56,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"2024-08-06T15:02:00Z"}' |
-    | E3(57) | ./assets/time_precision_schema.json | '{"id":57,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"2024-08-06T15:02:00.123Z"}' |
-    | E3(58) | ./assets/time_precision_schema.json | '{"id":58,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"2024-08-06T15:02:00.123456Z"}' |
-    | E3(59) | ./assets/time_precision_schema.json | '{"id":59,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"2024-08-06T15:02:00.123456789Z"}' |
-    | E3(60) | ./assets/time_precision_schema.json | '{"id":60,"time_!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'":"2024-08-06T15:02:00.1234567890Z"}' |
+    | E3(49) | ./assets/time_precision_schema.json | '{"id":49,"time_garbled":""}' |
+    | E3(50) | ./assets/time_precision_schema.json | '{"id":50,"time_garbled":" "}' |
+    | E3(51) | ./assets/time_precision_schema.json | '{"id":51,"time_garbled":"abc"}' |
+    | E3(52) | ./assets/time_precision_schema.json | '{"id":52,"time_garbled":"中文"}' |
+    | E3(53) | ./assets/time_precision_schema.json | '{"id":53,"time_garbled":"!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'"}' |
+    | E3(54) | ./assets/time_precision_schema.json | '{"id":54,"time_garbled":"max_len_str(32768)"}' |
+    | E3(55) | ./assets/time_precision_schema.json | '{"id":55,"time_garbled":"5"}' |
+    | E3(56) | ./assets/time_precision_schema.json | '{"id":56,"time_garbled":"2024-08-06T15:02:00Z"}' |
+    | E3(57) | ./assets/time_precision_schema.json | '{"id":57,"time_garbled":"2024-08-06T15:02:00.123Z"}' |
+    | E3(58) | ./assets/time_precision_schema.json | '{"id":58,"time_garbled":"2024-08-06T15:02:00.123456Z"}' |
+    | E3(59) | ./assets/time_precision_schema.json | '{"id":59,"time_garbled":"2024-08-06T15:02:00.123456789Z"}' |
+    | E3(60) | ./assets/time_precision_schema.json | '{"id":60,"time_garbled":"2024-08-06T15:02:00.1234567890Z"}' |
     | E3(61) | ./assets/time_precision_schema.json | '{"id":61,"time_max_len_str(32768)":""}' |
     | E3(62) | ./assets/time_precision_schema.json | '{"id":62,"time_max_len_str(32768)":" "}' |
     | E3(63) | ./assets/time_precision_schema.json | '{"id":63,"time_max_len_str(32768)":"abc"}' |
@@ -166,3 +169,23 @@ Given Dispatcher has been opened
     | E3(130) | ./assets/time_precision_schema.json | '{"id":130,"time_default":"2024-08-06T15:02:00.123456Z"}' |
     | E3(131) | ./assets/time_precision_schema.json | '{"id":131,"time_default":"2024-08-06T15:02:00.123456789Z"}' |
     | E3(132) | ./assets/time_precision_schema.json | '{"id":132,"time_default":"2024-08-06T15:02:00.1234567890Z"}' |
+    | E3(133) | ./assets/time_precision_schema.json | '{"id":133,"time_Microsecond":""}' |
+    | E3(134) | ./assets/time_precision_schema.json | '{"id":134,"time_Microsecond":" "}' |
+    | E3(135) | ./assets/time_precision_schema.json | '{"id":135,"time_Microsecond":"abc"}' |
+    | E3(136) | ./assets/time_precision_schema.json | '{"id":136,"time_Microsecond":"中文"}' |
+    | E3(137) | ./assets/time_precision_schema.json | '{"id":137,"time_Microsecond":"!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'"}' |
+    | E3(138) | ./assets/time_precision_schema.json | '{"id":138,"time_Microsecond":"max_len_str(32768)"}' |
+    | E3(139) | ./assets/time_precision_schema.json | '{"id":139,"time_Microsecond":5}' |
+    | E3(140) | ./assets/time_precision_schema.json | '{"id":140,"time_Microsecond":"2024-08-06T15:02:00.123456Z"}' |
+    | E3(141) | ./assets/time_precision_schema.json | '{"id":141,"time_Microsecond":"2024-08-06T15:02:00.123456789Z"}' |
+    | E3(142) | ./assets/time_precision_schema.json | '{"id":142,"time_Microsecond":"2024-08-06T15:02:00.1234567890Z"}' |
+    | E3(143) | ./assets/time_precision_schema.json | '{"id":143,"time_us":""}' |
+    | E3(144) | ./assets/time_precision_schema.json | '{"id":144,"time_us":" "}' |
+    | E3(145) | ./assets/time_precision_schema.json | '{"id":145,"time_us":"abc"}' |
+    | E3(146) | ./assets/time_precision_schema.json | '{"id":146,"time_us":"中文"}' |
+    | E3(147) | ./assets/time_precision_schema.json | '{"id":147,"time_us":"!@#$%^&*()_+{}|:<>?~`-=[]\\;\',./\'"}' |
+    | E3(148) | ./assets/time_precision_schema.json | '{"id":148,"time_us":"max_len_str(32768)"}' |
+    | E3(149) | ./assets/time_precision_schema.json | '{"id":149,"time_us":5}' |
+    | E3(150) | ./assets/time_precision_schema.json | '{"id":150,"time_us":"2024-08-06T15:02:00.123456Z"}' |
+    | E3(151) | ./assets/time_precision_schema.json | '{"id":151,"time_us":"2024-08-06T15:02:00.123456789Z"}' |
+    | E3(152) | ./assets/time_precision_schema.json | '{"id":152,"time_us":"2024-08-06T15:02:00.1234567890Z"}' |
