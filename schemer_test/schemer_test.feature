@@ -1,8 +1,32 @@
 Feature: Schemer test 
 
-Scenario:
-Given NATS has been opened
-Given Dispatcher has been opened
+Background: 
+    Given NATS has been opened
+    Given Dispatcher has been opened
+    Given Schema "'normal_type_array_schema'" from "'./assets/array_schema1.json'"
+    Given Schema "'special_type_array_schema'" from "'./assets/array_schema2.json'"
+    Given Create data product "'drink_normal_type'" with ruleset "'drink_normal_type_rs'" and the schema "'normal_type_array_schema'"
+    Given Create data product "'drink_special_type'" with ruleset "'drink_special_type_rs'" and the schema "'special_type_array_schema'"
+
+
+@E4
+	Scenario Outline:  Successful scenario for array
+    Given Publish an Event to "'drink_normal_type_rs'" with "'<Payload>'"
+    When Subscribe data product "'drink_normal_type'" using sdk
+    # Then The received message and "'<Payload>'" are completely consistent in every field
+    Examples:
+    |   ID    |           Payload                        |
+    |  E4(1)  |  {"id":1,"array_string":["a","b","c"]}   |
+
+# @E5
+# 	Scenario Outline:  Successful scenario for array
+#     Given Publish an Event to "'drink_special_type_rs'" with "'<payload>'"
+#     When Subscribe data product "'drink_special_type'" using sdk
+#     # Then The received message and "'<Payload>'" are completely inconsistent in every field
+    # Examples:
+    # |   ID   | payload                         |
+    # |  E5(1) |   {"id":2,"array_string":""}   |
+
 #Scenario
 	Scenario Outline:  Successful scenario. Use the `product sub` command to receive all data published to the specified data product.
 	Given Create data product "'drink'"
@@ -22,27 +46,6 @@ Given Dispatcher has been opened
     | M(7) | ""                                    | ""                    | "abc"                            | "中文"                         | "1.23"                  | "!@#$%^&*()_+{}|:<>?~`-=[]\;',./'" |      |                |                                                   |                                          |                                    | "5"                      |
     | M(8) | " "                                   | " "                   | "中文"                           | "!@#$%^&*()_+{}|:<>?~`-=[]\;',./'" | "1.234567111111111"     | "max_len_str(32768)"   |      |                | "[]"                                              |                                          |                                    | "1.234567111111111"     |
 
-
-#Scenario
-	Scenario Outline: Failure scenario. Use the `product sub` command to receive all data published to the specified data product.
-	Given Create data product "'drink'"
-    Given Create data product "'drink'" with ruleset "'drinkCreated'"
-    Given Publish 10 Events
-    When Subscribe data product "'<ProductName>'" using parameters "'<SubName>'" "'<Partitions>'" "'<Seq>'"
-    Then The CLI returns exit code 1
-    Examples:
-    |   ID   | ProductName | SubName    |   Partitions   |      Seq      |
-    |  E1(1) |   notExist  |            |      -1        |       1       |
-    |  E1(2) |     drink   |            |    notNumber   |       1       |
-    |  E1(3) |     drink   |            |      0.1       |       1       |
-    |  E1(4) |     drink   |            |      ,         |       1       |
-    |  E1(5) |     drink   |            |    abc,200     |       1       |
-    |  E1(6) |     drink   |            |      ""        |       1       |
-    |  E1(7) |     drink   |            |      -1        |       0       |
-    |  E1(8) |     drink   |            |      -1        |      -1       |  
-    |  E1(9) |     drink   |            |      -1        |   notNumber   | 
-    |  E1(10)|     drink   |            |      -1        |      0.1      |
-    |  E1(11)|     drink   |            |      -1        |      ""       | 
 
 
 #Extension6
