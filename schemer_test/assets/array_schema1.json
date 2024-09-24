@@ -1,0 +1,37 @@
+{ 
+  "id": {
+        "type": "uint"
+  },
+  "array_string": {
+	"type": "array",
+	"subtype": "string"
+  },
+  "array_binary": {
+	"type": "array",
+	"subtype": "binary"
+  },
+  "array_int": {
+	"type": "array",
+	"subtype": "int"
+  },
+  "array_uint": {
+	"type": "array",
+	"subtype": "uint"
+  },
+  "array_float": {
+	"type": "array",
+	"subtype": "float"
+  },
+  "array_bool": {
+	"type": "array",
+	"subtype": "bool"
+  },
+  "array_time": {
+	"type": "array",
+	"subtype": "time"
+  },
+  "array_any": {
+	"type": "array",
+	"subtype": "any"
+  }
+}
