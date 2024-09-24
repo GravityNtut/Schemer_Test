@@ -28,7 +28,7 @@ Background:
     |E4(7)	|{"id":7, "array_time":[]}|
     |E4(8)	|{"id":8, "array_any":[]}|
     |E4(9)	|{"id":9, "array_string":["a", "b", "c"]}|
-    # |E4(10)	|{"id":10, "array_any":["a", "b", "c"]}|
+    |E4(10)	|{"id":10, "array_any":["a", "b", "c"]}|
     # |E4(11)	|{"id":11, "array_int":[1, 2, 3]}|
     # |E4(12)	|{"id":12, "array_uint":[1, 2, 3]}| 
     # |E4(13)	|{"id":13, "array_float":[1, 2, 3]}|
