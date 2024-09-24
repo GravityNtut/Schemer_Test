@@ -3,8 +3,10 @@ Feature: Schemer test
 Scenario:
 Given NATS has been opened
 Given Dispatcher has been opened
-Given Create data product drink with schema
-Given drink create ruleset drinkCreated with schema
+Given Schema "'normal_type_time_schema'" from "'./assets/time_precision_schema.json'"
+Given Schema "'special_type_time_schema'" from "'./assets/time_precision_failure_schema.jso'n"
+Given Create data product "'drink_normal_type'" with ruleset "'drink_normal_type_rs'" and the schema "'normal_type_array_schema'"
+Given Create data product "'drink_special_type'" with ruleset "'drink_special_type_rs'" and the schema "'special_type_array_schema'"
 @E2
 #Scenario
 # TODO: Schema 初始化丟就好了
