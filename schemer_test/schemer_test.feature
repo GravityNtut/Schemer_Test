@@ -6,10 +6,15 @@ Background:
     Given Schema "'normal_type_array_schema'" from "'./assets/array_schema1.json'"
     Given Schema "'special_type_array_schema'" from "'./assets/array_schema2.json'"
     Given Schema "'wrong_subtype_array_schema'" from "'./assets/array_schema_wrong_subtype.json'"
+    Given Schema "'map_type1_schema'" from "'./assets/map_schema1.json'"
+    Given Schema "'map_type2_schema'" from "'./assets/map_schema2.json'"
+    Given Schema "'map_type3_schema'" from "'./assets/map_schema3.json'"
+    Given Create data product "'drink_wrong_subtype'" with ruleset "'drink_wrong_subtype_rs'" and the schema "'wrong_subtype_array_schema'"
     Given Create data product "'drink_normal_type'" with ruleset "'drink_normal_type_rs'" and the schema "'normal_type_array_schema'"
     Given Create data product "'drink_special_type'" with ruleset "'drink_special_type_rs'" and the schema "'special_type_array_schema'"
-    Given Create data product "'drink_wrong_subtype'" with ruleset "'drink_wrong_subtype_rs'" and the schema "'wrong_subtype_array_schema'"
-
+    Given Create data product "'drink_map_type1'" with ruleset "'drink_map_type1_rs'" and the schema "'map_type1_schema'"
+    Given Create data product "'drink_map_type2'" with ruleset "'drink_map_type2_rs'" and the schema "'map_type2_schema'"
+    Given Create data product "'drink_map_type3'" with ruleset "'drink_map_type3_rs'" and the schema "'map_type3_schema'"
 
 @E4
 	Scenario Outline:  Successful scenario for array
@@ -66,60 +71,55 @@ Background:
     |   ID   | Payload                         |
     |  E5(1) |   {"id":1,"array_string":""}   |
 
-
+@E6 
 #Extension6
-    @E6 
     Scenario Outline:  Success scenario for map schema test
-    Given Create data product "'drink'" with "'<schema>'"
-    Given Create data product "'drink'" with ruleset "'drinkCreated'" with "'<schema>'"
-    Given Publish an Event with payload "'<payload>'" into sdk
-    When Subscribe data product "'drink'" using the sdk
-    Then The received message and expected result are completely consistent in every field
+    Given Publish an Event to "'<Ruleset>'" with "'<Payload>'"
+    When Subscribe data product "'<DataProduct>'" using sdk
+    Then The received message and "'<Payload>'" are completely consistent in every field
     Examples:
-    |   ID   |      schema       |              payload                                                                                                                                                                                                             |
-    |  E6(1) |  map_schema1.json |    {"id": 1,"map_col":{}}                                                                                                                                                                                                        |
-    |  E6(2) |  map_schema2.json |    {"id": 1,"map_col":{"nested_time":"2024-08-06T15:02:00.123Z"}}                                                                                                                                                                |
-    |  E6(3) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":"", "binary_col":"", "int_col": 5, "uint_col": 5, "float_col": 5, "bool_col": 0, "any_col": ""}}                                                                                             |
-    |  E6(4) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":" ", "binary_col":" ", "int_col": 0, "uint_col": 0, "float_col": 1.23, "bool_col": "1", "any_col": " "}}                                                                                     |
-    |  E6(5) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":"abc", "binary_col":"max_len(32768)", "int_col": -1, "uint_col": 5, "float_col": -1.23, "bool_col": false, "any_col": "abc"}}                                                                |
-    |  E6(6) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":"中文", "binary_col":"0", "int_col": 5, "uint_col": 0, "float_col": -1.234567111111111, "bool_col": true, "any_col": "中文"}}                                                                 |
-    |  E6(7) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":"!@#$%^&*()_+{}|:<>?~`-=[]\;',./'", "binary_col":"001", "int_col": 0, "uint_col": 5, "float_col": 1.234567111111111, "bool_col": 0, "any_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./'"}}          |
-    |  E6(8) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":max_len_str(32768), "binary_col":"", "int_col": -1, "uint_col": 0, "float_col": 1.7976931348623157e+308, "bool_col": 1, "any_col": max_len_str(32768)}}                                      |
-    |  E6(9) |  map_schema3.json |    {"id": 1,"map_col":{"string_col":"", "binary_col":" ", "int_col": 5, "uint_col": 5, "float_col": -1.7976931348623157e+308, "bool_col": false, "any_col": 5}}                                                                  | 
-    |  E6(10)|  map_schema3.json |    {"id": 1,"map_col":{"string_col":" ", "binary_col":"0", "int_col": 0, "uint_col": 0, "float_col": -0, "bool_col": true, "any_col": []}}                                                                                       |
-    |  E6(11)|  map_schema3.json |    {"id": 1,"map_col":{"string_col":"abc", "binary_col":"001", "int_col": -1, "uint_col": 5, "float_col": 5, "bool_col": 0, "any_col": {}}}                                                                                      |
-    |  E6(12)|  map_schema3.json |    {"id": 1,"map_col":{"string_col":"中文", "binary_col":"", "int_col": 5, "uint_col": 0, "float_col": 1.23, "bool_col": 1, "any_col": true}}                                                                                     |
-    |  E6(13)|  map_schema3.json |    {"id": 1,"map_col":{"string_col":"!@#$%^&*()_+{}|:<>?~`-=[]\;',./'", "binary_col":" ", "int_col": 0, "uint_col": 5, "float_col": -1.23, "bool_col": false, "any_col": null}}                                                  |
+    |   ID   |    DataProduct   |      Ruleset        |              Payload                                                                                                                                                                                                             |
+    |  E6(1) |  drink_map_type1 |  drink_map_type1_rs |    {"id": 1,"map_col":{}}                                                                                                                                                                                                        |
+    |  E6(2) |  drink_map_type2 |  drink_map_type2_rs |    {"id": 2,"map_col":{"nested_time":"2024-08-06T15:02:00.123Z"}}                                                                                                                                                                |
+    |  E6(3) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 3,"map_col":{"string_col":"", "binary_col":"", "int_col": 5, "uint_col": 5, "float_col": 5, "bool_col": 0, "any_col": ""}}                                                                                             |
+    |  E6(4) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 4,"map_col":{"string_col":" ", "binary_col":" ", "int_col": 0, "uint_col": 0, "float_col": 1.23, "bool_col": "1", "any_col": " "}}                                                                                     |
+    |  E6(5) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 5,"map_col":{"string_col":"abc", "binary_col":"max_len(32768)", "int_col": -1, "uint_col": 5, "float_col": -1.23, "bool_col": false, "any_col": "abc"}}                                                                |
+    |  E6(6) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 6,"map_col":{"string_col":"中文", "binary_col":"0", "int_col": 5, "uint_col": 0, "float_col": -1.234567111111111, "bool_col": true, "any_col": "中文"}}                                                                 |
+    |  E6(7) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 7,"map_col":{"string_col":"!@#$%^&*()_+{}:<>?~`-=[]\;',.'/", "binary_col":"001", "int_col": 0, "uint_col": 5, "float_col": 1.234567111111111, "bool_col": 0, "any_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',.'/"}}          |
+    |  E6(8) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 8,"map_col":{"string_col":"[max_len_str()]", "binary_col":"", "int_col": -1, "uint_col": 0, "float_col": 1.7976931348623157e+308, "bool_col": 1, "any_col": "[max_len_str()]"}}                                      |
+    |  E6(9) |  drink_map_type3 |  drink_map_type3_rs |    {"id": 9,"map_col":{"string_col":"", "binary_col":" ", "int_col": 5, "uint_col": 5, "float_col": -1.7976931348623157e+308, "bool_col": false, "any_col": 5}}                                                                  | 
+    |  E6(10)|  drink_map_type3 |  drink_map_type3_rs |    {"id": 10,"map_col":{"string_col":" ", "binary_col":"0", "int_col": 0, "uint_col": 0, "float_col": -0, "bool_col": true, "any_col": []}}                                                                                       |
+    |  E6(11)|  drink_map_type3 |  drink_map_type3_rs |    {"id": 11,"map_col":{"string_col":"abc", "binary_col":"001", "int_col": -1, "uint_col": 5, "float_col": 5, "bool_col": 0, "any_col": {}}}                                                                                      |
+    |  E6(12)|  drink_map_type3 |  drink_map_type3_rs |    {"id": 12,"map_col":{"string_col":"中文", "binary_col":"", "int_col": 5, "uint_col": 0, "float_col": 1.23, "bool_col": 1, "any_col": true}}                                                                                     |
+    |  E6(13)|  drink_map_type3 |  drink_map_type3_rs |    {"id": 13,"map_col":{"string_col":"!@#$%^&*()_+{}:<>?~`-=[]\;',.'/", "binary_col":" ", "int_col": 0, "uint_col": 5, "float_col": -1.23, "bool_col": false, "any_col": null}}                                                  |
 
+@E7
 #Extension7
-    @E7
     Scenario Outline:  failure scenario for map schema test
-    Given Create data product "'drink'" with "'<schema>'"
-    Given Create data product "'drink'" with ruleset "'drinkCreated'" with "'<schema>'"
-    Given Publish an Event with payload "'<payload>'" into sdk
-    When Subscribe data product "'drink'" using the sdk
+    Given Publish an Event to "'<Ruleset>'" with "'<Payload>'"
+    When Subscribe data product "'<DataProduct>'" using sdk
     Then The received message and expected result are completely inconsistent in every field
     Examples:
-    |   ID   |      schema       |              payload                                                                                                                                                                                                                                                          |
-    | E7(1)  |  map_schema1.json |     {"id": 1,"map_col":""}                                                                                                                                                                                                                                                    |
-    | E7(2)  |  map_schema1.json |     {"id": 1,"map_col":" "}                                                                                                                                                                                                                                                   |
-    | E7(3)  |  map_schema1.json |     {"id": 1,"map_col":"abc"}                                                                                                                                                                                                                                                 |
-    | E7(4)  |  map_schema1.json |     {"id": 1,"map_col":"中文"}                                                                                                                                                                                                                                                |
-    | E7(5)  |  map_schema1.json |     {"id": 1,"map_col":"!@#$%^&*()_+{}|:<>?~`-=[]\;',./'"}                                                                                                                                                                                                                    |
-    | E7(6)  |  map_schema1.json |     {"id": 1,"map_col":max_len_str(32768)}                                                                                                                                                                                                                                    |
-    | E7(7)  |  map_schema1.json |     {"id": 1,"map_col":5}                                                                                                                                                                                                                                                     |
-    | E7(8)  |  map_schema2.json |     {"id": 1,"map_col":{"nested_time":"2024-08-06T15:02:00.1234567890Z"}}                                                                                                                                                                                                     |
-    | E7(9)  |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "abc", "int_col": "", "uint_col": "", "float_col": "", "bool_col": ""}}                                                                                                                                                 |
-    | E7(10) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "中文", "int_col": " ", "uint_col": " ", "float_col": " ", "bool_col": " "}}                                                                                                                                            |
-    | E7(11) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./", "int_col": "abc", "uint_col": "abc", "float_col": "abc", "bool_col": "abc"}}                                                                                                         |
-    | E7(12) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": 5, "int_col": "中文", "uint_col": "中文", "float_col": "中文", "bool_col": "中文"}}                                                                                                                                       |                                       
-    | E7(13) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "10102", "int_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./", "uint_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./", "float_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./", "bool_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./"}}                   |
-    | E7(14) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": 101, "int_col": max_len_str(32768), "uint_col": max_len_str(32768), "float_col": max_len_str(32768), "bool_col": max_len_str(32768)}}                                                                                   |
-    | E7(15) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "abc", "int_col": 9,223,372,036,854,775,808, "uint_col": -1, "float_col": 1.0000000000000001, "bool_col": 5}}                                                                                                           |
-    | E7(16) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "中文", "int_col": -9,223,372,036,854,775,809, "uint_col": 18,446,744,073,709,551,616, "float_col": "", "bool_col": ""}}                                                                                                |
-    | E7(17) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":5, "binary_col": "!@#$%^&*()_+{}|:<>?~`-=[]\;',./", "int_col": 1.23, "uint_col": 1.23, "float_col": " ", "bool_col": " "}}                                                                                                               |
-    | E7(18) |  map_schema3.json |     {"id": 1,"map_col":{"string_col":"abcde","string_col":"duplicate"}}                                                                                                                                                                                                       |
-    | E7(19) |  map_schema3.json |     {"id": 1,"map_col":{"abcde"}}                                                                                                                                                                                                                                            |
+    |   ID   |    DataProduct   |     Ruleset        |              Payload                                                                                                                                                                                                                                                          |
+    | E7(1)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 1,"map_col":""}                                                                                                                                                                                                                                                    |
+    | E7(2)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 2,"map_col":" "}                                                                                                                                                                                                                                                   |
+    | E7(3)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 3,"map_col":"abc"}                                                                                                                                                                                                                                                 |
+    | E7(4)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 4,"map_col":"中文"}                                                                                                                                                                                                                                                |
+    | E7(5)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 5,"map_col":"!@#$%^&*()_+{}:<>?~`-=[]\;',.'/"}                                                                                                                                                                                                                    |
+    | E7(6)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 6,"map_col":"[max_len_str()]"}                                                                                                                                                                                                                               |
+    | E7(7)  |  drink_map_type1 |  drink_map_type1_rs |     {"id": 7,"map_col":5}                                                                                                                                                                                                                                                     |
+    | E7(8)  |  drink_map_type2 |  drink_map_type2_rs |     {"id": 8,"map_col":{"nested_time":"2024-08-06T15:02:00.1234567890Z"}}                                                                                                                                                                                                     |
+    | E7(9)  |  drink_map_type3 |  drink_map_type3_rs |     {"id": 9,"map_col":{"string_col":5, "binary_col": "abc", "int_col": "", "uint_col": "", "float_col": "", "bool_col": ""}}                                                                                                                                                 |
+    | E7(10) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 10,"map_col":{"string_col":5, "binary_col": "中文", "int_col": " ", "uint_col": " ", "float_col": " ", "bool_col": " "}}                                                                                                                                            |
+    | E7(11) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 11,"map_col":{"string_col":5, "binary_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',./", "int_col": "abc", "uint_col": "abc", "float_col": "abc", "bool_col": "abc"}}                                                                                                         |
+    | E7(12) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 12,"map_col":{"string_col":5, "binary_col": 5, "int_col": "中文", "uint_col": "中文", "float_col": "中文", "bool_col": "中文"}}                                                                                                                                       |                                       
+    | E7(13) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 13,"map_col":{"string_col":5, "binary_col": "10102", "int_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',./", "uint_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',./", "float_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',./", "bool_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',./"}}                      |
+    | E7(14) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 14,"map_col":{"string_col":5, "binary_col": 101, "int_col": "[max_len_str()]", "uint_col": "[max_len_str()]", "float_col": "[max_len_str()]", "bool_col": "[max_len_str()]"}}                                                                   |
+    | E7(15) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 15,"map_col":{"string_col":5, "binary_col": "abc", "int_col": 9223372036854775808, "uint_col": -1, "float_col": 1.0000000000000001, "bool_col": 5}}                                                                                                           |
+    | E7(16) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 16,"map_col":{"string_col":5, "binary_col": "中文", "int_col": -9223372036854775809, "uint_col": 18446744073709551616, "float_col": "", "bool_col": ""}}                                                                                                |
+    | E7(17) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 17,"map_col":{"string_col":5, "binary_col": "!@#$%^&*()_+{}:<>?~`-=[]\;',./", "int_col": 1.23, "uint_col": 1.23, "float_col": " ", "bool_col": " "}}                                                                                                                |
+    | E7(18) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 18,"map_col":{"string_col":"abcde","string_col":"duplicate"}}                                                                                                                                                                                                       |
+    | E7(19) |  drink_map_type3 |  drink_map_type3_rs |     {"id": 19,"map_col":{"abcde"}}                                                                                                                                                                                                                                            |
 
 
 @E8

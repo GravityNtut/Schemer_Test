@@ -109,7 +109,7 @@ func CreateProduct(pc *product_sdk.ProductClient, dataProduct string, schemaJSON
 func CreateRuleset(pc *product_sdk.ProductClient, dataProduct, ruleset, schemaJSON, event string) error {
 	product, err := pc.GetProduct(dataProduct)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Not found product sdk_example"))
+		return errors.New(fmt.Sprintf("Not found product %s", dataProduct))
 	}
 
 	if product.Setting.Rules == nil {
@@ -381,8 +381,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^NATS has been opened$`, CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, CheckDispatcherService)
-	ctx.Given(`Schema "'(.*?)'" from "'(.*?)'"$`, LoadSchemaFromFile)
-	ctx.Given(`Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"$`, CreateDataProductAndRuleset)
+	ctx.Given(`^Schema "'(.*?)'" from "'(.*?)'"$`, LoadSchemaFromFile)
+	ctx.Given(`^Create data product "'(.*?)'" with ruleset "'(.*?)'" and the schema "'(.*?)'"$`, CreateDataProductAndRuleset)
 	ctx.Given(`^Publish an Event to "'(.*?)'" with "'(.*?)'"$`, PublishEvent)
 	ctx.When(`^Subscribe data product "'(.*?)'" using sdk$`, SubscribeDataProduct)
 	ctx.Then(`^The received message and "'(.*?)'" are completely consistent in every field$`, CheckConsistency)
