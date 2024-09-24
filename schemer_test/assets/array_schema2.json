@@ -20,15 +20,11 @@
   },
   "array_special": {
     "type": "array",
-    "subtype": "!@#$%^&*()_+{}|:<>?~`-=[]\\;',./'"
+    "subtype": "!@#$%^&*()_+{}:<>?~`-=[]\\;',./"
   },
   "array_maxLen": {
     "type": "array",
     "subtype": "[max_len_str()]"
-  },
-  "array_number": {
-    "type": "array",
-    "subtype": 5
   },
   "array_string": {
     "type": "array",
